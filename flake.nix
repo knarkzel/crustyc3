@@ -26,5 +26,9 @@
           })
         ];
       };
+
+      shellHook = ''
+        export ESP_LOGLEVEL="INFO"
+      '';
     });
 }
