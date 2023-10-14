@@ -5,7 +5,7 @@ Connect your `esp32c3` with a cable that has data transfer capability, then do f
 ```
 git clone https://github.com/knarkzel/oddc3
 cd oddc3
-nix develop
+nix develop # or nix-shell
 cargo run
 ```
 
