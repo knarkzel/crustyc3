@@ -8,3 +8,10 @@ cd oddc3
 nix develop
 cargo run
 ```
+
+## Resources
+
+Checkout the `no-std` sections of these resources:
+
+- [esp-rs](https://github.com/esp-rs/)
+- [The Rust on ESP Book](https://esp-rs.github.io/book/introduction.html)
