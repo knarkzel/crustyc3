@@ -21,6 +21,7 @@
           cargo-espflash
           (rust-bin.nightly.latest.default.override {
             extensions = ["rust-src"];
+            targets = ["riscv32imc-unknown-none-elf"];
           })
         ];
       };
