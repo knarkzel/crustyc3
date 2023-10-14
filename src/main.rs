@@ -2,13 +2,14 @@
 #![no_main]
 
 extern crate alloc;
-use esp_backtrace as _;
 use core::mem::MaybeUninit;
-// use esp_println::println;
+
+use esp_backtrace as _;
+use esp_println::println;
 use esp_wifi::{initialize, EspWifiInitFor};
-use hal::{clock::ClockControl, peripherals::Peripherals, prelude::*, Delay};
-use hal::{systimer::SystemTimer, Rng};
-use log::*;
+use hal::{
+    clock::ClockControl, peripherals::Peripherals, prelude::*, systimer::SystemTimer, Delay, Rng,
+};
 
 #[global_allocator]
 static ALLOCATOR: esp_alloc::EspHeap = esp_alloc::EspHeap::empty();
@@ -35,7 +36,8 @@ fn main() -> ! {
     // or remove it and set ESP_LOGLEVEL manually before running cargo run
     // this requires a clean rebuild because of https://github.com/rust-lang/cargo/issues/10358
     esp_println::logger::init_logger_from_env();
-    
+    log::info!("Logger is setup");
+
     let timer = SystemTimer::new(peripherals.SYSTIMER).alarm0;
     let _init = initialize(
         EspWifiInitFor::Wifi,
@@ -44,10 +46,9 @@ fn main() -> ! {
         system.radio_clock_control,
         &clocks,
     ).unwrap();
-    
+
     loop {
-        info!("Logger is setup");
-        debug!("Uhh ohh");
+        println!("Hello, world!");
         delay.delay_ms(500u32);
     }
 }
