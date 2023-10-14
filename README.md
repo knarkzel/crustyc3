@@ -14,5 +14,6 @@ cargo run
 Checkout the `no-std` sections of these resources:
 
 - [esp-rs](https://github.com/esp-rs/)
+- [embassy](https://embassy.dev/)
 - [esp-wifi](https://github.com/esp-rs/esp-wifi)
 - [The Rust on ESP Book](https://esp-rs.github.io/book/introduction.html)
