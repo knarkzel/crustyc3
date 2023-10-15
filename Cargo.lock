@@ -133,6 +133,7 @@ checksum = "7059fff8937831a9ae6f0fe4d658ffabf58f2ca96aa9dec1c889f936f705f216"
 name = "crustyc3"
 version = "0.1.0"
 dependencies = [
+ "critical-section",
  "embedded-graphics",
  "embedded-io 0.4.0",
  "embedded-svc",
@@ -143,6 +144,7 @@ dependencies = [
  "esp32c3-hal",
  "heapless",
  "micromath",
+ "riscv",
  "smoltcp",
  "ssd1306",
 ]

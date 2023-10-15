@@ -18,3 +18,5 @@ heapless = { version = "0.7.14", default-features = false }
 embedded-graphics = "0.8.1"
 ssd1306 = "0.8.3"
 micromath = "2.0.0"
+critical-section = "1.1.2"
+riscv = "0.10.1"

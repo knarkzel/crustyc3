@@ -1,6 +1,9 @@
 #![no_std]
 #![no_main]
 
+use esp_backtrace as _;
+use core::cell::RefCell;
+use critical_section::Mutex;
 use embedded_graphics::{
     mono_font::{
         ascii::FONT_9X18_BOLD,
@@ -11,17 +14,21 @@ use embedded_graphics::{
     text::{Alignment, Text},
 };
 use hal::{
-    clock::ClockControl,
-    gpio::IO,
-    i2c::I2C,
-    peripherals::Peripherals,
+    gpio::{Event, Gpio9, Input, PullDown, IO},
+    interrupt,
+    peripherals::{self, Peripherals},
     prelude::*,
+    riscv,
+    i2c::I2C,
+    clock::ClockControl,
     timer::TimerGroup,
 };
 use esp_backtrace as _;
 use nb::block;
 use ssd1306::{prelude::*, I2CDisplayInterface, Ssd1306};
-use micromath::F32Ext;
+
+static BUTTON: Mutex<RefCell<Option<Gpio9<Input<PullDown>>>>> = Mutex::new(RefCell::new(None));
+static mut COUNT: usize = 0;
 
 #[entry]
 fn main() -> ! {
@@ -52,8 +59,20 @@ fn main() -> ! {
         &clocks,
     );
 
-    // Start timer (5 second interval)
-    timer0.start(5u64.secs());
+    // Set GPIO9 as an input
+    let mut button = io.pins.gpio9.into_pull_down_input();
+    button.listen(Event::HighLevel);
+
+    critical_section::with(|cs| BUTTON.borrow_ref_mut(cs).replace(button));
+
+    interrupt::enable(peripherals::Interrupt::GPIO, interrupt::Priority::Priority3).unwrap();
+
+    unsafe {
+        riscv::interrupt::enable();
+    }
+
+    // Start timer (1 second interval)
+    timer0.start(1u64.secs());
 
     // Initialize display with I2C
     let interface = I2CDisplayInterface::new(i2c);
@@ -68,6 +87,24 @@ fn main() -> ! {
         .build();
 
     loop {
+        // Write crustyahh
+        Text::with_alignment(
+            "bruh moment",
+            display.bounding_box().center() + Point::new(0, 0),
+            text_style,
+            Alignment::Center,
+        )
+        .draw(&mut display)
+        .unwrap();
+
+        // Write buffer to display
+        display.flush().unwrap();
+        // Clear display buffer
+        display.clear(BinaryColor::Off).unwrap();
+
+        // Wait on timer
+        block!(timer0.wait()).unwrap();
+
         // Write crustyahh
         Text::with_alignment(
             "crustyahh",
@@ -86,4 +123,19 @@ fn main() -> ! {
         // Wait on timer
         block!(timer0.wait()).unwrap();
     }
+}
+
+#[interrupt]
+fn GPIO() {
+    critical_section::with(|cs| {
+        unsafe {
+            COUNT += 1;
+            esp_println::println!("GPIO interrupt {COUNT}");
+        }
+        BUTTON
+            .borrow_ref_mut(cs)
+            .as_mut()
+            .unwrap()
+            .clear_interrupt();
+    });
 }
