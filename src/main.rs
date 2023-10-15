@@ -1,131 +1,89 @@
 #![no_std]
 #![no_main]
 
+use embedded_graphics::{
+    mono_font::{
+        ascii::FONT_9X18_BOLD,
+        MonoTextStyleBuilder,
+    },
+    pixelcolor::BinaryColor,
+    prelude::*,
+    text::{Alignment, Text},
+};
+use hal::{
+    clock::ClockControl,
+    gpio::IO,
+    i2c::I2C,
+    peripherals::Peripherals,
+    prelude::*,
+    timer::TimerGroup,
+};
 use esp_backtrace as _;
-use embedded_io::blocking::*;
-use embedded_svc::{ipv4::Interface, wifi::{AccessPointInfo, ClientConfiguration, Configuration, Wifi}};
-use esp_println::{print, println};
-use esp_wifi::{wifi::{utils::create_network_interface, WifiError, WifiMode}, wifi_interface::WifiStack, current_millis, initialize, EspWifiInitFor};
-use hal::{clock::ClockControl, peripherals::Peripherals, prelude::*, systimer::SystemTimer, Rng};
-use smoltcp::{iface::SocketStorage, wire::{IpAddress, Ipv4Address}};
-
-const SSID: &str = "Pixel";
-const PASSWORD: &str = "12341234";
+use nb::block;
+use ssd1306::{prelude::*, I2CDisplayInterface, Ssd1306};
+use micromath::F32Ext;
 
 #[entry]
 fn main() -> ! {
+    // Setup timers
     let peripherals = Peripherals::take();
-    let system = peripherals.SYSTEM.split();
-    let clocks = ClockControl::max(system.clock_control).freeze();
+    let mut system = peripherals.SYSTEM.split();
+    let clocks = ClockControl::boot_defaults(system.clock_control).freeze();
 
-    let timer = SystemTimer::new(peripherals.SYSTIMER).alarm0;
-    let init = initialize(
-        EspWifiInitFor::Wifi,
-        timer,
-        Rng::new(peripherals.RNG),
-        system.radio_clock_control,
+    let timer_group0 = TimerGroup::new(
+        peripherals.TIMG0,
         &clocks,
-    )
-    .unwrap();
+        &mut system.peripheral_clock_control,
+    );
+    let mut timer0 = timer_group0.timer0;
 
-    let (wifi, ..) = peripherals.RADIO.split();
-    let mut socket_set_entries: [SocketStorage; 3] = Default::default();
-    let (iface, device, mut controller, sockets) =
-        create_network_interface(&init, wifi, WifiMode::Sta, &mut socket_set_entries).unwrap();
-    let wifi_stack = WifiStack::new(iface, device, sockets, current_millis);
+    // Setup IO
+    let io = IO::new(peripherals.GPIO, peripherals.IO_MUX);
 
-    let client_config = Configuration::Client(ClientConfiguration {
-        ssid: SSID.into(),
-        password: PASSWORD.into(),
-        ..Default::default()
-    });
-    let res = controller.set_configuration(&client_config);
-    println!("wifi_set_configuration returned {:?}", res);
+    // Setup I2C with
+    // - SDA => GPIO1
+    // - SCL => GPIO2
+    let i2c = I2C::new(
+        peripherals.I2C0,
+        io.pins.gpio1,
+        io.pins.gpio2,
+        100u32.kHz(),
+        &mut system.peripheral_clock_control,
+        &clocks,
+    );
 
-    controller.start().unwrap();
-    println!("is wifi started: {:?}", controller.is_started());
+    // Start timer (5 second interval)
+    timer0.start(5u64.secs());
 
-    println!("Start Wifi Scan");
-    let res: Result<(heapless::Vec<AccessPointInfo, 10>, usize), WifiError> = controller.scan_n();
-    if let Ok((res, _count)) = res {
-        for ap in res {
-            println!("{:?}", ap);
-        }
-    }
+    // Initialize display with I2C
+    let interface = I2CDisplayInterface::new(i2c);
+    let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
+        .into_buffered_graphics_mode();
+    display.init().unwrap();
 
-    println!("{:?}", controller.get_capabilities());
-    println!("wifi_connect {:?}", controller.connect());
-
-    // wait to get connected
-    println!("Wait to get connected");
-    loop {
-        let res = controller.is_connected();
-        match res {
-            Ok(connected) => {
-                if connected {
-                    break;
-                }
-            }
-            Err(err) => {
-                println!("{:?}", err);
-                loop {}
-            }
-        }
-    }
-    println!("{:?}", controller.is_connected());
-
-    // wait for getting an ip address
-    println!("Wait to get an ip address");
-    loop {
-        wifi_stack.work();
-
-        if wifi_stack.is_iface_up() {
-            println!("got ip {:?}", wifi_stack.get_ip_info());
-            break;
-        }
-    }
-
-    println!("Start busy loop on main");
-
-    let mut rx_buffer = [0u8; 1536];
-    let mut tx_buffer = [0u8; 1536];
-    let mut socket = wifi_stack.get_socket(&mut rx_buffer, &mut tx_buffer);
+    // Specify different text styles
+    let text_style = MonoTextStyleBuilder::new()
+        .font(&FONT_9X18_BOLD)
+        .text_color(BinaryColor::On)
+        .build();
 
     loop {
-        println!("Making HTTP request");
-        socket.work();
+        // Write crustyahh
+        Text::with_alignment(
+            "crustyahh",
+            display.bounding_box().center() + Point::new(0, 0),
+            text_style,
+            Alignment::Center,
+        )
+        .draw(&mut display)
+        .unwrap();
 
-        socket
-            .open(IpAddress::Ipv4(Ipv4Address::new(142, 250, 185, 115)), 80)
-            .unwrap();
+        // Write buffer to display
+        display.flush().unwrap();
+        // Clear display buffer
+        display.clear(BinaryColor::Off).unwrap();
 
-        socket
-            .write(b"GET / HTTP/1.0\r\nHost: www.mobile-j.de\r\n\r\n")
-            .unwrap();
-        socket.flush().unwrap();
-
-        let wait_end = current_millis() + 20 * 1000;
-        loop {
-            let mut buffer = [0u8; 512];
-            if let Ok(len) = socket.read(&mut buffer) {
-                let to_print = unsafe { core::str::from_utf8_unchecked(&buffer[..len]) };
-                print!("{}", to_print);
-            } else {
-                break;
-            }
-
-            if current_millis() > wait_end {
-                println!("Timeout");
-                break;
-            }
-        }
-        println!();
-
-        socket.disconnect();
-
-        let wait_end = current_millis() + 5 * 1000;
-        while current_millis() < wait_end {
-            socket.work();
-        }
+        // Wait on timer
+        block!(timer0.wait()).unwrap();
     }
 }
