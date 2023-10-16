@@ -144,6 +144,7 @@ version = "0.1.0"
 dependencies = [
  "bleps",
  "critical-section",
+ "display-interface-spi",
  "embedded-graphics",
  "embedded-io 0.4.0",
  "embedded-svc",
@@ -152,8 +153,11 @@ dependencies = [
  "esp-println",
  "esp-wifi",
  "esp32c3-hal",
+ "fugit",
  "heapless",
+ "ili9341",
  "micromath",
+ "mipidsi",
  "riscv",
  "smoltcp",
  "ssd1306",
@@ -238,9 +242,19 @@ checksum = "0649998afacf6d575d126d83e68b78c0ab0e00ca2ac7e9b3db11b4cbe8274ef0"
 dependencies = [
  "az",
  "byteorder",
- "embedded-graphics-core",
+ "embedded-graphics-core 0.4.0",
  "float-cmp",
  "micromath",
+]
+
+[[package]]
+name = "embedded-graphics-core"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8b1239db5f3eeb7e33e35bd10bd014e7b2537b17e071f726a09351431337cfa"
+dependencies = [
+ "az",
+ "byteorder",
 ]
 
 [[package]]
@@ -432,9 +446,10 @@ dependencies = [
 [[package]]
 name = "esp-wifi"
 version = "0.1.0"
-source = "git+https://github.com/esp-rs/esp-wifi/?rev=fbb8417#fbb8417fc450ec0701067b36629770c11338231c"
+source = "git+https://github.com/esp-rs/esp-wifi/?rev=887eb22#887eb224aaa8224df77f8ad4125a31adce62e8e0"
 dependencies = [
  "atomic-polyfill 1.0.3",
+ "cfg-if",
  "critical-section",
  "embedded-io 0.4.0",
  "embedded-svc",
@@ -448,6 +463,7 @@ dependencies = [
  "esp32s3-hal",
  "fugit",
  "heapless",
+ "libm",
  "linked_list_allocator",
  "log",
  "num-derive",
@@ -459,7 +475,7 @@ dependencies = [
 [[package]]
 name = "esp-wifi-sys"
 version = "0.1.0"
-source = "git+https://github.com/esp-rs/esp-wifi/?rev=fbb8417#fbb8417fc450ec0701067b36629770c11338231c"
+source = "git+https://github.com/esp-rs/esp-wifi/?rev=887eb22#887eb224aaa8224df77f8ad4125a31adce62e8e0"
 dependencies = [
  "anyhow",
 ]
@@ -654,6 +670,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
+name = "ili9341"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52897a923ee65051ae7da0f0b3d326c08d3b0998aa59346dc9a856e3f137c0a9"
+dependencies = [
+ "display-interface",
+ "embedded-graphics-core 0.3.3",
+ "embedded-hal",
+]
+
+[[package]]
 name = "indexmap"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -662,6 +689,12 @@ dependencies = [
  "equivalent",
  "hashbrown",
 ]
+
+[[package]]
+name = "libm"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
 name = "linked_list_allocator"
@@ -710,6 +743,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80084fa3099f58b7afab51e5f92e24c2c2c68dcad26e96ad104bd6011570461d"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "mipidsi"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46968d0e30e7753c3503248bc48b408f9cce2bfbaa522a33e13c9aafadc4ce43"
+dependencies = [
+ "display-interface",
+ "embedded-graphics-core 0.4.0",
+ "embedded-hal",
+ "heapless",
+ "nb 1.1.0",
 ]
 
 [[package]]
@@ -964,7 +1010,7 @@ dependencies = [
  "display-interface",
  "display-interface-i2c",
  "display-interface-spi",
- "embedded-graphics-core",
+ "embedded-graphics-core 0.4.0",
  "embedded-hal",
 ]
 
